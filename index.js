@@ -2,7 +2,7 @@ const express = require('express')
 const app = express()
 const route = require('./routes/router')
 require('dotenv').config()
-
+const jwt = require('jsonwebtoken')
 
 const port = process.env.PORT || 3000
 app.use(express.urlencoded({ extended: true }));

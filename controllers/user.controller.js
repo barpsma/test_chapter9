@@ -44,7 +44,7 @@ exports.SignUp = async (req,res)=>{
         to: email,
         subject: 'Verification Register',
         html: `<p>Click to verify account:</p> 
-        <a href="http://localhost:3000/user/verify?token=${token}">Verify</a>`
+        <a href="http://localhost:3000/user/verify/${token}">Verify</a>`
     }
 
 
@@ -71,7 +71,7 @@ exports.SignUp = async (req,res)=>{
 
 exports.Verify = async (req,res)=>{
     try{
-        const {id} = jsonwebtoken.verify(req.params.token, 'akbar_key')
+        const  { id } = jsonwebtoken.verify(req.params.token, 'akbar_key')
         await User.update({ is_active: true }, {where: {id: id}})
         res.send('Account activated')
     } catch (error){
