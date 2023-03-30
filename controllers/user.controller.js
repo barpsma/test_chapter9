@@ -2,44 +2,51 @@ const nodemailer = require('nodemailer')
 const { User } = require('../models/index')
 const jsonwebtoken = require('jsonwebtoken')
 
+
 require('dotenv').config()
 
 exports.SignUp = async (req,res)=>{
     const { email, password } = req.body
 
-    const token = jsonwebtoken.sign({code: code }, 'akbar_key')
-
-    const transporter = nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 465,
-        secure: true,
-        auth: {
-            user: process.env.USER_AUTH,
-            pass: process.env.USER_PASS
-        },
-    })
-
     //mencari apakah email sudah terdaftar di db
     const emailUser = await User.findOne({
-      where: {
-        email: email
-      }
-    })
-    //jika email sudah ada
-    if(emailUser){
-      return res.status(400).json({
-        status: false,
-        message: 'email sudah terdaftar'
+        where: {
+          email: email
+        }
       })
-    }
+      //jika email sudah ada
+      if(emailUser){
+        return res.status(400).json({
+          status: false,
+          message: 'email sudah terdaftar'
+        })
+      }
+
+      const newUser= await User.create({
+        email: email,
+        password: password
+        })
+
+        const transporter = nodemailer.createTransport({
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
+            auth: {
+                user: process.env.USER_AUTH,
+                pass: process.env.USER_PASS
+            },
+        })
+
+    const token = jsonwebtoken.sign({id: newUser.id }, 'akbar_key')
 
     const mail = {
         from: process.env.USER_AUTH,
         to: email,
         subject: 'Verification Register',
         html: `<p>Click to verify account:</p> 
-        <a href="http://localhost:3000/verify?token=${token}">Verify</a>`
+        <a href="http://localhost:3000/user/verify?token=${token}">Verify</a>`
     }
+
 
     //isi
     await transporter.sendMail(mail, (err, info) => {
@@ -52,13 +59,27 @@ exports.SignUp = async (req,res)=>{
             })
         } else {
             console.log('Email sent' + info.response)
-            User.create({
-                email: email,
-                password: password
+            res.json({
+                status: 200,
+                message: `Email sent`
             })
         }
         
     })
+    
+}
+
+exports.Verify = async (req,res)=>{
+    try{
+        const {id} = jsonwebtoken.verify(req.params.token, 'akbar_key')
+        await User.update({ is_active: true }, {where: {id: id}})
+        res.send('Account activated')
+    } catch (error){
+        console.error(error)
+        res.status(500).json({
+            message: 'Error'
+        })
+    }
     
 }
 
